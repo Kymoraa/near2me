@@ -1,39 +1,48 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:near2me/models/agent_context.dart';
 
 class SuggestionAgent {
   final GenerativeModel model;
 
-  SuggestionAgent()
+  SuggestionAgent(String apiKey)
     : model = GenerativeModel(
-        model: 'gemini-2.0-flash',
+        model: 'gemini-1.5-flash',
         apiKey: dotenv.env['GEMINI_API_KEY']!,
       );
-  //Coordinates: ${context.lat}, ${context.lng}
-  Future<String> getSuggestion(AgentContext context) async {
+
+  Future<String> getSuggestion({
+    required String timeOfDay,
+    required LatLng userLocation,
+    required Map<String, dynamic> restaurant,
+  }) async {
     try {
+      final name = restaurant['name'];
+      final rating = restaurant['rating']?.toString() ?? 'N/A';
+      final vicinity = restaurant['vicinity'] ?? 'nearby';
+      final types = (restaurant['types'] as List?)?.join(', ') ?? '';
+      final openNow =
+          restaurant['opening_hours']?['open_now'] == true ? 'Yes' : 'No';
+      final priceLevel = restaurant['price_level']?.toString() ?? 'Unknown';
+
       final prompt = '''
-          You are a smart assistant that gives local suggestions based on the user's time and precise location.
+        You are a helpful assistant recommending a local spot.
 
-          Current time: ${context.timeOfDay}  
-          Location description: ${context.locationDescription}  
-          Radius: 1000 meters (1 kilometer)
+        Time: $timeOfDay
+        Restaurant: $name
+        Rating: $rating
+        Open Now: $openNow
+        Price: $priceLevel
+        Vicinity: $vicinity
+        Tags: $types
 
-          Only suggest options that are very close — within 1 kilometer of the coordinates. Mention one highly-rated place to eat nearby. Include its name, short menu, user reviews, and approximate walking distance from the coordinates.
-
-          Keep your response friendly and conversational.
-        ''';
+        Generate a 60-word friendly suggestion. Include 2-3 sample dishes they might serve. Sound conversational and warm.
+      ''';
 
       final response = await model.generateContent([Content.text(prompt)]);
-      final output = response.text;
-
-      if (output == null || output.trim().isEmpty) {
-        return "Hmm, I couldn't find anything right now. Try changing the time or location.";
-      }
-      return output;
+      return response.text ?? "This place looks good!";
     } catch (e) {
-      return "There was a problem generating the suggestion: $e";
+      return "Error generating suggestion: $e";
     }
   }
 }
