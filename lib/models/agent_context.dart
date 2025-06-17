@@ -1,6 +1,11 @@
 class AgentContext {
+  final double latitude;
+  final double longitude;
   final String timeOfDay;
-  final String locationDescription;
 
-  AgentContext({required this.timeOfDay, required this.locationDescription});
+  AgentContext({
+    required this.latitude,
+    required this.longitude,
+    required this.timeOfDay,
+  });
 }
