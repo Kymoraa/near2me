@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:near2me/agent/suggestion_agent.dart';
+import 'package:near2me/services/directions_service.dart';
 import 'package:near2me/services/places_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final SuggestionAgent _agent = SuggestionAgent(dotenv.env['GEMINI_API_KEY']!);
   final PlacesService placesService = PlacesService();
+  final DirectionsService directionsService = DirectionsService();
 
   @override
   void initState() {
@@ -36,8 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
+
     setState(() {
-      userLocation = LatLng(position.latitude, position.longitude);
+      userLocation = LatLng(-1.259902, 36.785873);
       _selected = userLocation;
     });
   }
@@ -84,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    selectedRestaurant = restaurant;
     restaurantLatLng = LatLng(
       restaurant['geometry']['location']['lat'],
       restaurant['geometry']['location']['lng'],
@@ -102,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder:
           (_) => AlertDialog(
-            title: const Text("Top Pick For You!"),
+            title: const Text("Top pick for you!"),
             content: SingleChildScrollView(child: Text(suggestion)),
             actions: [
               TextButton(
@@ -112,9 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ElevatedButton(
                 onPressed: () async {
                   Navigator.pop(context);
-                  final path = await placesService.getDirections(
-                    userLocation!,
-                    restaurantLatLng!,
+                  final path = await directionsService.getWalkingRoute(
+                    origin: _selected!,
+                    destination: restaurantLatLng!,
                   );
                   setState(() {
                     _polylines = {
@@ -151,10 +153,11 @@ class _HomeScreenState extends State<HomeScreen> {
           _selected == null
               ? const Center(child: CircularProgressIndicator())
               : GoogleMap(
+                mapType: MapType.normal,
                 onMapCreated: _onMapCreated,
                 initialCameraPosition: CameraPosition(
                   target: _selected!,
-                  zoom: 15,
+                  zoom: 14,
                 ),
                 markers: {
                   Marker(
@@ -168,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       markerId: const MarkerId('restaurant'),
                       position: restaurantLatLng!,
                       icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange,
+                        BitmapDescriptor.hueAzure,
                       ),
                     ),
                 },

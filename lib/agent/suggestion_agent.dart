@@ -26,7 +26,9 @@ class SuggestionAgent {
       final priceLevel = restaurant['price_level']?.toString() ?? 'Unknown';
 
       final prompt = '''
-        You are a helpful assistant recommending a local spot.
+        You are a very helpful assistant recommending a local restaurant close to the user's current location and time of day [if it is eveneing, dinner, morning breakfast etc].
+        Suggest an open restaurant or cafe nearby. If a restaurant is closed, find another one within the vicinity.
+        Use the following details from Google Places:
 
         Time: $timeOfDay
         Restaurant: $name
@@ -36,11 +38,23 @@ class SuggestionAgent {
         Vicinity: $vicinity
         Tags: $types
 
-        Generate a 60-word friendly suggestion. Include 2-3 sample dishes they might serve. Sound conversational and warm.
+        Generate a 60-word friendly suggestion. Sound conversational and warm.
+        Reply in this format:
+
+        Your introduction ... "Hey there..."
+        Then
+        Restaurant: [Name]
+        Time: [Time]
+        Review: [A user review of the restaurant from Google reviews]
+        Rating: [Number of stars from Google reviews]
+        Price: [Average meal cost]
+
+        Finish with something like "Let me know if you'd prefer.... Enjoy your dinner/breakfast/lunch [based on time]
+
       ''';
 
       final response = await model.generateContent([Content.text(prompt)]);
-      return response.text ?? "This place looks good!";
+      return response.text ?? "Sorry, I couldn't find anything.";
     } catch (e) {
       return "Error generating suggestion: $e";
     }
